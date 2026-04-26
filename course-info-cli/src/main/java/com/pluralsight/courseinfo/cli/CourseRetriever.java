@@ -1,7 +1,10 @@
 package com.pluralsight.courseinfo.cli;
 
 import com.pluralsight.courseinfo.cli.service.CourseRetrievalService;
+import com.pluralsight.courseinfo.cli.service.CourseStorageService;
 import com.pluralsight.courseinfo.cli.service.PluralsightCourse;
+import com.pluralsight.courseinfo.domain.repository.CourseRepository;
+import com.pluralsight.courseinfo.domain.repository.RepositoryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,15 +25,17 @@ public class CourseRetriever {
             retrieveCourses(args[0]);
 //            PluralsightCourse course=new PluralsightCourse("id","title","00:54:36","https://url",false);
 //            LOG.info("course: {}",course);
-        }catch (Exception e){
+        }catch (Exception | RepositoryException e){
             LOG.error("Unexpected Error",e);
         }
     }
 
-    private static void retrieveCourses(String authorId) {
+    private static void retrieveCourses(String authorId) throws RepositoryException {
 
         LOG.info("Retrieving courses for author '{}'",authorId);
         CourseRetrievalService courseRetrievalService=new CourseRetrievalService();
+        CourseRepository courseRepository=CourseRepository.openCourseRepository("./courses.db");
+        CourseStorageService courseStorageService=new CourseStorageService(courseRepository);
 
         List<PluralsightCourse> courseToStore= courseRetrievalService.getCourseFor(authorId)
                 .stream()
@@ -38,5 +43,8 @@ public class CourseRetriever {
                 .toList();
 
         LOG.info("Retrieved the following {} courses {}",courseToStore.size(),courseToStore);
+
+        courseStorageService.storePluralsightCourses(courseToStore);
+        LOG.info("Courses successfully stored");
     }
 }
